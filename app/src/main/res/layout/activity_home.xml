@@ -1,11 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".MainActivity">
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:background="@color/bg_slider_screen2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
 
-    <TextView android:text="Hello World!" android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-</RelativeLayout>
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:backgroundTint="#FFF"
+        android:layout_alignParentStart="true">
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="match_parent"
+        android:layout_height="520dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:text="YourMedicine"
+        android:textColor="@color/colorPrimaryDark"
+        android:textSize="@dimen/slide_title"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/buttonGoToApp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/bg_slider_screen3"
+        android:text="START"
+        android:textColor="#FFF"
+        android:visibility="visible" />
+
+
+</LinearLayout>

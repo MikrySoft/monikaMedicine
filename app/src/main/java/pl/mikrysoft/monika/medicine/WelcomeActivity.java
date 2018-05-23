@@ -7,39 +7,66 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.speech.tts.TextToSpeech;
+import android.support.annotation.NonNull;
+import android.support.design.widget.TextInputEditText;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CalendarView;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.CommonStatusCodes;
+
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * Created by umesh on 25-02-2017.
  */
 public class WelcomeActivity extends AppCompatActivity {
 
+    public static final int RC_OCR_CAPTURE = 9003;
     private ViewPager viewPager;
     private MyViewPagerAdapter myViewPagerAdapter;
     private LinearLayout dotsLayout;
     private TextView[] dots;
     private int[] layouts;
-    private Button btnSkip, btnNext, btnSaveDaily, btnSaveAlarm;
+    private Button btnSkip, btnNext, btnSaveDaily, btnSaveAlarm, btnSaveLek, btngo;
     private PreferenceManager prefManager;
     TimePicker timePicker;
+    CalendarView calendarView;
+    TextView myDate;
+    EditText pressure;
+    EditText weight;
 
-    private void addDailyData(Date today, int pressure, int weight) {
+    EditText lek;
+    EditText rano;
+    EditText poludnie;
+    EditText wieczor;
+    Button btnOCR;
+
+    TextToSpeech toSpeech;
+    int result;
+    EditText editText;
+    String text;
+
+    DatabaseHelper myDb;
+
+    private void addDailyData(Date today, int mypressure, int myweight) {
     }
 
     @Override
@@ -48,10 +75,12 @@ public class WelcomeActivity extends AppCompatActivity {
 
         // Checking for first time launch - before calling setContentView()
         prefManager = new PreferenceManager(this);
-        if (!prefManager.isFirstTimeLaunch()) {
-            launchHomeScreen();
-            finish();
-        }
+//        if (!prefManager.isFirstTimeLaunch()) {
+//            launchHomeScreen();
+//            finish();
+//        }
+
+        myDb = new DatabaseHelper(this);
 
         // Making notification bar transparent
         if (Build.VERSION.SDK_INT >= 21) {
@@ -65,17 +94,30 @@ public class WelcomeActivity extends AppCompatActivity {
         btnSkip = (Button) findViewById(R.id.btn_skip);
         btnNext = (Button) findViewById(R.id.btn_next);
 
-        btnSaveAlarm = (Button) findViewById(R.id.buttonAlarm);
 
-        btnSaveDaily = (Button) findViewById(R.id.btnSaveDaily);
+
+
+
+//        editText= (EditText) findViewById(R.id.editText_lek);
+//        toSpeech = new TextToSpeech(WelcomeActivity.this, new TextToSpeech.OnInitListener() {
+//            @Override
+//            public void onInit(int i) {
+//                if(i==TextToSpeech.SUCCESS)
+//                    result=toSpeech.setLanguage(Locale.UK);
+//                else
+//                    Toast.makeText(WelcomeActivity.this, "",Toast.LENGTH_LONG).show();
+//            }
+//        });
+
 
 
         // layouts of all welcome sliders
         // add few more layouts if you want
         layouts = new int[]{
                 R.layout.slide_screen1,
-                R.layout.slide_screen2,
-                R.layout.slide_screen3};
+                R.layout.slide_screen2a,
+                R.layout.slide_screen3,
+                R.layout.slide_screen4};
 
         // adding bottom dots
         addBottomDots(0);
@@ -94,30 +136,7 @@ public class WelcomeActivity extends AppCompatActivity {
             }
         });
 
-        btnSaveAlarm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Calendar calendar = Calendar.getInstance();
-                if (android.os.Build.VERSION.SDK_INT >= 23) {
-                    calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
-                            timePicker.getHour(), timePicker.getMinute(), 0);
-                } else {
-                    calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
-                            timePicker.getCurrentHour(), timePicker.getCurrentMinute(), 0);
-                }
 
-                setAlarm(calendar.getTimeInMillis());
-            }
-        });
-
-
-        btnSaveDaily.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Date date = new Date();
-                addDailyData(date, 11 ,12);
-            }
-        });
 
         btnNext.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -185,8 +204,9 @@ public class WelcomeActivity extends AppCompatActivity {
 
         @Override
         public void onPageSelected(int position) {
-            addBottomDots(position);
-
+            if (position < layouts.length) {
+                addBottomDots(position);
+            }
             // changing the next button text 'NEXT' / 'GOT IT'
             if (position == layouts.length - 1) {
                 // last page. make button text to GOT IT
@@ -235,6 +255,94 @@ public class WelcomeActivity extends AppCompatActivity {
             layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
             View view = layoutInflater.inflate(layouts[position], container, false);
+
+            switch (position) {
+                case 0:
+                    btnSaveAlarm = (Button) view.findViewById(R.id.buttonAlarm);
+                    timePicker = (TimePicker) view.findViewById(R.id.timePicker);
+                    btnSaveAlarm.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Calendar calendar = Calendar.getInstance();
+                            if (android.os.Build.VERSION.SDK_INT >= 23) {
+                                calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
+                                        timePicker.getHour(), timePicker.getMinute(), 0);
+                            } else {
+                                calendar.set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
+                                        timePicker.getCurrentHour(), timePicker.getCurrentMinute(), 0);
+                            }
+
+                            setAlarm(calendar.getTimeInMillis());
+                        }
+                    });
+                    break;
+                case 1:
+                    lek = (EditText) view.findViewById(R.id.editLek);
+                    rano = (EditText) view.findViewById(R.id.editRano);
+                    poludnie = (EditText) view.findViewById(R.id.editPoludnie);
+                    wieczor = (EditText) view.findViewById(R.id.editWieczorem);
+                    btnSaveLek = (Button) view.findViewById(R.id.btnSaveLek);
+                    btnSaveLek.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            boolean isInserted = myDb.insertDateLeki(lek.getText().toString(), rano.getText().toString(),poludnie.getText().toString(),wieczor.getText().toString());
+                            if(isInserted=true)
+                                Toast.makeText(WelcomeActivity.this, "Zapisano lek",Toast.LENGTH_LONG).show();
+                            else
+                                Toast.makeText(WelcomeActivity.this, "Nie zapisano leku",Toast.LENGTH_LONG).show();
+
+                        }
+                    });
+
+                    btnOCR = (Button) view.findViewById(R.id.btnOCR);
+                    btnOCR.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v)
+                        {
+                            Intent intent = new Intent(v.getContext(), OcrCaptureActivity.class);
+                            intent.putExtra(OcrCaptureActivity.AutoFocus, true);
+                            intent.putExtra(OcrCaptureActivity.UseFlash, false);
+
+                            startActivityForResult(intent, RC_OCR_CAPTURE);
+
+                        }
+                });
+
+                    break;
+                case 2:
+                    pressure = (EditText) view.findViewById(R.id.textedit_pressure);
+                    weight = (EditText) view.findViewById(R.id.textedit_weight);
+                    btnSaveDaily = (Button) view.findViewById(R.id.btnSaveDaily);
+                    btnSaveDaily.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Date date = new Date();
+                            boolean isInserted = myDb.insertDatePomiary(date.toString(), weight.getText().toString(), pressure.getText().toString());
+                            if(isInserted=true)
+                                Toast.makeText(WelcomeActivity.this, "Zapisano pomiar",Toast.LENGTH_LONG).show();
+                            else
+                                Toast.makeText(WelcomeActivity.this, "Nie zapisano pomiaru",Toast.LENGTH_LONG).show();
+
+                        }
+                    });
+
+                    break;
+                case 3:
+                    calendarView =(CalendarView) view.findViewById(R.id.calendarView);
+                    myDate = (TextView) view.findViewById(R.id.myDate);
+                    calendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
+                        @Override
+                        public void onSelectedDayChange(@NonNull CalendarView calendarView, int i, int i1, int i2) {
+                            //myDate.setText("Waga: "+weight +"  Ciśnienie: "+ pressure);
+                            /*
+                            SELECT FROM POMIARY WHERE DATA = DATAZKALENDARZA
+                             */
+                        }
+                    });
+                    break;
+
+
+            }
             container.addView(view);
 
             return view;
@@ -257,4 +365,50 @@ public class WelcomeActivity extends AppCompatActivity {
             container.removeView(view);
         }
     }
+
+    /**
+     * Called when an activity you launched exits, giving you the requestCode
+     * you started it with, the resultCode it returned, and any additional
+     * data from it.  The <var>resultCode</var> will be
+     * {@link #RESULT_CANCELED} if the activity explicitly returned that,
+     * didn't return any result, or crashed during its operation.
+     * <p/>
+     * <p>You will receive this call immediately before onResume() when your
+     * activity is re-starting.
+     * <p/>
+     *
+     * @param requestCode The integer request code originally supplied to
+     *                    startActivityForResult(), allowing you to identify who this
+     *                    result came from.
+     * @param resultCode  The integer result code returned by the child activity
+     *                    through its setResult().
+     * @param data        An Intent, which can return result data to the caller
+     *                    (various data can be attached to Intent "extras").
+     * @see #startActivityForResult
+     * @see #createPendingResult
+     * @see #setResult(int)
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == RC_OCR_CAPTURE) {
+            if (resultCode == CommonStatusCodes.SUCCESS) {
+                if (data != null) {
+                    String text = data.getStringExtra(OcrCaptureActivity.TextBlockObject);
+                   // statusMessage.setText(R.string.ocr_success);
+                    lek.setText(text);
+                    Log.d("OCR", "Text read: " + text);
+                } else {
+                    //statusMessage.setText(R.string.ocr_failure);
+                    Log.d("OCR", "No Text captured, intent data is null");
+                }
+            } else {
+                //statusMessage.setText(String.format(getString(R.string.ocr_error),
+                        //CommonStatusCodes.getStatusCodeString(resultCode)));
+            }
+        }
+        else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
 }
