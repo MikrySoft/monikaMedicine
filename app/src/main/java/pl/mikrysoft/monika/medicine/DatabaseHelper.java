@@ -2,6 +2,7 @@ package pl.mikrysoft.monika.medicine;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -19,6 +20,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
     public static final String COL_12 ="ID";
     public static final String COL_22 ="LEK";
+    public static final String COL_33 ="DAWKA";
     public static final String COL_32 ="RANO";
     public static final String COL_42 ="POLUDNIE";
     public static final String COL_52 ="WIECZOR";
@@ -46,11 +48,12 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         onCreate(sqLiteDatabase);
     }
 
-    public boolean insertDateLeki (String lek, String rano, String poludnie, String wieczor )
+    public boolean insertDateLeki (String lek,  String dawka, String rano, String poludnie, String wieczor )
     {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(COL_22, lek);
+        contentValues.put(COL_33, dawka);
         contentValues.put(COL_32, rano);
         contentValues.put(COL_42, poludnie);
         contentValues.put(COL_52, wieczor);
@@ -74,4 +77,17 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         else
             return true;
     }
+
+    public Cursor getAllMedicineData(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT * FROM "+TABLE_NAME2, null );
+        return res;
+    }
+
+    public Cursor getAllPressureData(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor res = db.rawQuery("SELECT * FROM "+TABLE_NAME, null );
+        return res;
+    }
+
 }

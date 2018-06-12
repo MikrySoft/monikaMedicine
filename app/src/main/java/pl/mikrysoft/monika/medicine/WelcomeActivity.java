@@ -1,21 +1,28 @@
 package pl.mikrysoft.monika.medicine;
 
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.NonNull;
-import android.support.design.widget.TextInputEditText;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+
 import android.text.Html;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -24,19 +31,23 @@ import android.widget.Button;
 import android.widget.CalendarView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ShareActionProvider;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+
 import com.google.android.gms.common.api.CommonStatusCodes;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
+import java.util.List;
 
-/**
- * Created by umesh on 25-02-2017.
- */
+
 public class WelcomeActivity extends AppCompatActivity {
 
     public static final int RC_OCR_CAPTURE = 9003;
@@ -54,10 +65,12 @@ public class WelcomeActivity extends AppCompatActivity {
     EditText weight;
 
     EditText lek;
+    EditText dawka;
     EditText rano;
     EditText poludnie;
     EditText wieczor;
     Button btnOCR;
+    Button btnAlarmOff;
 
     TextToSpeech toSpeech;
     int result;
@@ -65,9 +78,7 @@ public class WelcomeActivity extends AppCompatActivity {
     String text;
 
     DatabaseHelper myDb;
-
-    private void addDailyData(Date today, int mypressure, int myweight) {
-    }
+    private ShareActionProvider mShareActionProvider;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,8 +107,6 @@ public class WelcomeActivity extends AppCompatActivity {
 
 
 
-
-
 //        editText= (EditText) findViewById(R.id.editText_lek);
 //        toSpeech = new TextToSpeech(WelcomeActivity.this, new TextToSpeech.OnInitListener() {
 //            @Override
@@ -117,7 +126,8 @@ public class WelcomeActivity extends AppCompatActivity {
                 R.layout.slide_screen1,
                 R.layout.slide_screen2a,
                 R.layout.slide_screen3,
-                R.layout.slide_screen4};
+                R.layout.slide_screen4,
+                R.layout.slide_screen5};
 
         // adding bottom dots
         addBottomDots(0);
@@ -152,6 +162,19 @@ public class WelcomeActivity extends AppCompatActivity {
                 }
             }
         });
+
+
+
+    }
+
+
+
+
+    // Call to update the share intent
+    private void setShareIntent(Intent shareIntent) {
+        if (mShareActionProvider != null) {
+            mShareActionProvider.setShareIntent(shareIntent);
+        }
     }
 
     private void setAlarm(long time) {
@@ -165,8 +188,21 @@ public class WelcomeActivity extends AppCompatActivity {
         PendingIntent pi = PendingIntent.getBroadcast(this, 0, i, 0);
 
         //setting the repeating alarm that will be fired every day
-        am.setRepeating(AlarmManager.RTC, time, AlarmManager.INTERVAL_DAY, pi);
+        am.setRepeating(AlarmManager.RTC_WAKEUP, time, AlarmManager.INTERVAL_DAY, pi);
         Toast.makeText(this, "Alarm is set", Toast.LENGTH_SHORT).show();
+    }
+
+    private void cancelAlarm() {
+        /* Request the AlarmManager object */
+        AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        Intent intent = new Intent(this, MyAlarm.class);
+
+        /* Create the PendingIntent that would have launched the BroadcastReceiver */
+        PendingIntent pending = PendingIntent.getBroadcast(this, 0, intent, 0);
+
+        /* Cancel the alarm associated with that PendingIntent */
+        manager.cancel(pending);
     }
 
 
@@ -241,6 +277,14 @@ public class WelcomeActivity extends AppCompatActivity {
         }
     }
 
+    public void showMessage(String title, String Message){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(true);
+        builder.setTitle(title);
+        builder.setMessage(Message);
+        builder.show();
+    }
+
     /**
      * View pager adapter
      */
@@ -249,6 +293,8 @@ public class WelcomeActivity extends AppCompatActivity {
 
         public MyViewPagerAdapter() {
         }
+
+
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
@@ -260,6 +306,7 @@ public class WelcomeActivity extends AppCompatActivity {
                 case 0:
                     btnSaveAlarm = (Button) view.findViewById(R.id.buttonAlarm);
                     timePicker = (TimePicker) view.findViewById(R.id.timePicker);
+                    btnAlarmOff = (Button) view.findViewById(R.id.btnAlarmOff);
                     btnSaveAlarm.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -275,9 +322,19 @@ public class WelcomeActivity extends AppCompatActivity {
                             setAlarm(calendar.getTimeInMillis());
                         }
                     });
+
+                    btnAlarmOff.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Toast.makeText(WelcomeActivity.this, "Alarm wyłączony",Toast.LENGTH_LONG).show();
+                            cancelAlarm();
+                        }
+                    });
+
                     break;
                 case 1:
                     lek = (EditText) view.findViewById(R.id.editLek);
+                    dawka = (EditText) view.findViewById(R.id.editDawka);
                     rano = (EditText) view.findViewById(R.id.editRano);
                     poludnie = (EditText) view.findViewById(R.id.editPoludnie);
                     wieczor = (EditText) view.findViewById(R.id.editWieczorem);
@@ -285,7 +342,7 @@ public class WelcomeActivity extends AppCompatActivity {
                     btnSaveLek.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            boolean isInserted = myDb.insertDateLeki(lek.getText().toString(), rano.getText().toString(),poludnie.getText().toString(),wieczor.getText().toString());
+                            boolean isInserted = myDb.insertDateLeki(lek.getText().toString(), dawka.getText().toString(), rano.getText().toString(),poludnie.getText().toString(),wieczor.getText().toString());
                             if(isInserted=true)
                                 Toast.makeText(WelcomeActivity.this, "Zapisano lek",Toast.LENGTH_LONG).show();
                             else
@@ -329,18 +386,54 @@ public class WelcomeActivity extends AppCompatActivity {
                     break;
                 case 3:
                     calendarView =(CalendarView) view.findViewById(R.id.calendarView);
-                    myDate = (TextView) view.findViewById(R.id.myDate);
+
                     calendarView.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
                         @Override
                         public void onSelectedDayChange(@NonNull CalendarView calendarView, int i, int i1, int i2) {
-                            //myDate.setText("Waga: "+weight +"  Ciśnienie: "+ pressure);
-                            /*
-                            SELECT FROM POMIARY WHERE DATA = DATAZKALENDARZA
-                             */
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                            String selectedDate = sdf.format(new Date(calendarView.getDate()));
+
+                            Cursor res = myDb.getAllPressureData();
+                            if (res.getCount() ==0) {
+                                Toast.makeText(WelcomeActivity.this, "Brak danych",Toast.LENGTH_LONG).show();
+                            }
+
+                            StringBuffer buffer = new StringBuffer();
+                            while(res.moveToNext()){
+                                buffer.append("Waga:" + res.getString(2)+"\n\n");
+                                buffer.append("Ciśnienie:" + res.getString(3));
+                            }
+                        showMessage(selectedDate, buffer.toString());
                         }
                     });
                     break;
+                case 4:
+                    Cursor res = myDb.getAllMedicineData();
+                    if (res.getCount() ==0) {
+                        //show sth
+                    }
 
+                    StringBuffer buffer = new StringBuffer();
+                    while(res.moveToNext()){
+                        buffer.append("Id:" + res.getString(0)+"\n");
+                        buffer.append("Lek:" + res.getString(1)+"\n");
+                        buffer.append("Dawka:" + res.getString(2)+"\n");
+                        buffer.append("Rano:" + res.getString(3)+"\n");
+                        buffer.append("Poludnie:" + res.getString(4)+"\n");
+                        buffer.append("Wieczór:" + res.getString(5)+"\n");
+                    }
+
+                    Toast.makeText(WelcomeActivity.this, "4",Toast.LENGTH_LONG).show();
+                    break;
+                case 5:
+                    Toast.makeText(WelcomeActivity.this, "5",Toast.LENGTH_LONG).show();
+
+
+
+
+
+
+                    break;
 
             }
             container.addView(view);

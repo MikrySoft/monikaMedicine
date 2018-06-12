@@ -27,11 +27,6 @@
             android:layout_height="wrap_content"
             android:background="#FFF"/>
 
-        <TextView
-            android:id="@+id/myDate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView" />
 
     </LinearLayout>
 
