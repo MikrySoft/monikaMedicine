@@ -31,7 +31,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     }
 
     public DatabaseHelper(Context context) {
-        super(context, DATABASE_NAME, null, 1);
+        super(context, DATABASE_NAME, null, 2);
 
     }
 
@@ -39,12 +39,13 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL("create table " + TABLE_NAME + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, DATA TEXT, WAGA TEXT, CISNIENIE TEXT)");
-        sqLiteDatabase.execSQL("create table " + TABLE_NAME2 + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, LEK TEXT, RANO TEXT, POLUDNIE TEXT, WIECZOR TEXT)");
+        sqLiteDatabase.execSQL("create table " + TABLE_NAME2 + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, LEK TEXT, DAWKA TEXT, RANO TEXT, POLUDNIE TEXT, WIECZOR TEXT)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME2);
         onCreate(sqLiteDatabase);
     }
 
